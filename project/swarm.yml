@@ -1,0 +1,108 @@
+version: '3'
+
+services:
+
+  caddy:
+    image: remontada007/micro-caddy:1.0.0
+    deploy:
+      mode: replicated
+      replicas: 1
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+  front-end:
+    image: remontada007/front-end:1.0.1
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      BROKER_URL: "http://backend"
+
+  broker-service:
+    image: remontada007/broker-service:1.0.1
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  listener-service:
+    image: remontada007/listener-service:1.0.0
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  authentication-service:
+    image: remontada007/authentication-service:1.0.0
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      DSN: "host=postgres port=5432 user=<your username> password=<your password> dbname=<your db-name> sslmode=disable timezone=UTC connect_timeout=5"
+
+  logger-service:
+    image: remontada007/logger-service:1.0.1
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  mailer-service:
+    image: remontada007/mail-service:1.0.0
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      MAIL_DOMAIN: localhost
+      MAIL_HOST: mailhog
+      MAIL_PORT: 1025
+      MAIL_ENCRYPTION: none
+      MAIL_USERNAME: ""
+      MAIL_PASSWORD: ""
+      FROM_NAME: "<Your Name>"
+      FROM_ADDRESS: <Your Email-Address>
+  rabbitmq:
+    image: 'rabbitmq:3.9-alpine'
+    deploy:
+      mode: global
+
+  mailhog:
+    image: 'mailhog/mailhog:latest'
+    ports: 
+      - "8025:8025"
+    deploy:
+      mode: global
+
+  mongo:
+    image: 'mongo:4.2.17-bionic'
+    ports:
+      - "27017:27017"
+    deploy:
+      mode: global
+    environment:
+      MONGO_INITDB_DATABASE: <Your Database>
+      MONGO_INITDB_ROOT_USERNAME: <Your Username>
+      MONGO_INITDB_ROOT_PASSWORD: <Your Password>
+    volumes:
+      - ./db-data/mongo/:/data/db
+
+  postgres:
+    image: 'postgres:14.2'
+    ports:
+      - "5432:5432"
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      POSTGRES_USER: <Your Postgres Username>
+      POSTGRES_PASSWORD: p<Your Password> 
+      POSTGRES_DB: <Your Db-Name>
+    volumes:
+      - ./db-data/postgres/:/var/lib/postgresql/data/
+
+
+volumes:
+  caddy_data:
+    external: true
+  caddy_config:
